@@ -1,0 +1,5 @@
+.workbuddy/
+.wbapp_*.genie
+_shots/
+_edgetmp/
+*.log
