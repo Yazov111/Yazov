@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500&family=Zen+Old+Mincho:wght@400;500;600&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --bg:#04060C;
@@ -1630,13 +1630,61 @@ const ROUTES = {
 };
 
 /* ==========================================================
-   云端客户端
+   云端客户端（Supabase）
    ========================================================== */
 const CLOUD_CONFIG = {
-  endpoint:'https://siwen-xingyue.app.workbuddy.host',
-  oauthRelayBaseUrl:'https://www.workbuddy.cn/v2/as/genie-baas/oauth',
-  publishableKey:'wbpk_bKRfY3y5fGB4B2Gy2s2a9y_XqGyWBq7OCm0N3F0niMBMGP44reUUU1a'
+  endpoint:'https://qdshvivpavzmqjkxblj.supabase.co',
+  key:'sb_publishable_LzLJeEn8L-oB1CUGJpxvdA_9HxU-m5I'
 };
+
+/* Supabase 适配层：暴露与原 WorkBuddyCloud 相同的接口，
+   应用层代码（cloud.auth.* / cloud.database.*）无需任何改动 */
+window.WorkBuddyCloud = window.WorkBuddyCloud || {
+  createWorkBuddyCloud: function(cfg){
+    const sb = window.supabase.createClient(cfg.endpoint, cfg.key);
+    return {
+      database: sb,
+      auth: {
+        getSession: async () => {
+          const { data } = await sb.auth.getSession();
+          return { data: (data && data.session) ? data.session : null };
+        },
+        onAuthStateChange: (cb) => sb.auth.onAuthStateChange(cb),
+        signOut: () => sb.auth.signOut(),
+        sendOtp: async ({ email }) => {
+          const r = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser: true } });
+          if (r.error) return { error: r.error };
+          return { data: { isExistingUser: false, verificationId: null } };
+        },
+        verifyOtp: async (p) => {
+          const r = await sb.auth.verifyOtp({ email: p.email, token: p.token, type: 'email' });
+          if (r.error) return r;
+          if (p.password){
+            const u = await sb.auth.updateUser({ password: p.password });
+            if (u.error) return u;
+          }
+          return r;
+        },
+        signInWithPassword: (p) => sb.auth.signInWithPassword({ email: p.email, password: p.password }),
+        resetPasswordForEmail: async ({ email }) => {
+          const r = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser: false } });
+          if (r.error) return { error: r.error };
+          return { data: {
+            handle: {
+              updateUser: async ({ nonce, password }) => {
+                const v = await sb.auth.verifyOtp({ email, token: nonce, type: 'email' });
+                if (v.error) return v;
+                return await sb.auth.updateUser({ password });
+              }
+            }
+          }};
+        },
+        resetPasswordForOld: async ({ newPassword }) => sb.auth.updateUser({ password: newPassword })
+      }
+    };
+  }
+};
+
 const cloud = (window.WorkBuddyCloud && window.WorkBuddyCloud.createWorkBuddyCloud)
   ? window.WorkBuddyCloud.createWorkBuddyCloud(CLOUD_CONFIG)
   : null;
@@ -1676,6 +1724,7 @@ async function loadProfile(){
     ]);
     profile = (p && p.data) || null;
     isAdmin = !!(a && a.data);
+    try{ await cloud.database.rpc('claim_owned_pieces'); }catch(_){}
     if (!profile){
       const mail = userEmail();
       const guess = mail ? String(mail).split('@')[0].slice(0, 20) : '读者';

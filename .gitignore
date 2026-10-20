@@ -3,3 +3,4 @@
 _shots/
 _edgetmp/
 *.log
+supabase-setup.sql
