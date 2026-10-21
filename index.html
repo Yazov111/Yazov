@@ -2532,7 +2532,7 @@ function initAdmin(){
     try{
       const { data, error } = await cloud.database
         .from('submissions')
-        .update({ status, review_note: note || null, updated_at: new Date().toISOString() })
+        .update({ status })
         .eq('id', id)
         .select();
       if (error || !data || !data.length){
