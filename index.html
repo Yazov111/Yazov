@@ -1522,7 +1522,7 @@ function authPage(mode){
         <div class="field off" id="codeField">
           <label for="code">验证码 <span class="req">*</span></label>
           <div class="otp-row">
-            <input type="text" id="code" name="code" placeholder="六位数字" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            <input type="text" id="code" name="code" placeholder="六位或八位数字" inputmode="numeric" maxlength="8" autocomplete="one-time-code">
             <button type="button" class="btn" id="sendCodeBtn">获取验证码</button>
           </div>
           <p class="step-hint" id="otpHint">验证码登录不需要密码。</p>
@@ -1552,7 +1552,7 @@ function authPage(mode){
         </div>
         <div class="field" id="codeField">
           <label for="code">验证码 <span class="req">*</span></label>
-          <input type="text" id="code" name="code" placeholder="六位数字" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          <input type="text" id="code" name="code" placeholder="六位或八位数字" inputmode="numeric" maxlength="8" autocomplete="one-time-code">
         </div>
         <div class="field">
           <label for="password">设置密码 <span class="req">*</span> <span class="opt">至少 8 位</span></label>
@@ -1588,7 +1588,7 @@ function resetPage(){
         </div>
         <div class="field">
           <label for="code">验证码 <span class="req">*</span></label>
-          <input type="text" id="code" name="code" placeholder="六位数字" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          <input type="text" id="code" name="code" placeholder="六位或八位数字" inputmode="numeric" maxlength="8" autocomplete="one-time-code">
         </div>
         <div class="field">
           <label for="password">新密码 <span class="req">*</span> <span class="opt">至少 8 位</span></label>
@@ -1657,7 +1657,7 @@ window.WorkBuddyCloud = window.WorkBuddyCloud || {
           return { data: { isExistingUser: false, verificationId: null } };
         },
         verifyOtp: async (p) => {
-          const r = await sb.auth.verifyOtp({ email: p.email, token: p.token, type: 'email' });
+          const r = await sb.auth.verifyOtp({ email: p.email, token: String(p.token || '').replace(/\s+/g, ''), type: 'email' });
           if (r.error) return r;
           if (p.password){
             const u = await sb.auth.updateUser({ password: p.password });
@@ -1672,7 +1672,7 @@ window.WorkBuddyCloud = window.WorkBuddyCloud || {
           return { data: {
             handle: {
               updateUser: async ({ nonce, password }) => {
-                const v = await sb.auth.verifyOtp({ email, token: nonce, type: 'email' });
+                const v = await sb.auth.verifyOtp({ email, token: String(nonce || '').replace(/\s+/g, ''), type: 'email' });
                 if (v.error) return v;
                 return await sb.auth.updateUser({ password });
               }
@@ -2015,8 +2015,8 @@ function initAuth(mode){
       fail('请先获取当前邮箱的验证码。');
       return;
     }
-    if (!/^\d{4,8}$/.test(token)){
-      fail('请输入邮件里收到的验证码。');
+    if (!/^\d{6}(\d{2})?$/.test(token)){
+      fail('请输入邮件里收到的验证码（六位或八位数字）。');
       return;
     }
 
@@ -2117,7 +2117,7 @@ function initReset(){
       fail('请先获取当前邮箱的验证码。');
       return;
     }
-    if (!/^\d{4,8}$/.test(token)){ fail('请输入邮件里收到的验证码。'); return; }
+    if (!/^\d{6}(\d{2})?$/.test(token)){ fail('请输入邮件里收到的验证码（六位或八位数字）。'); return; }
     if (pwd.length < 8){ fail('新密码至少 8 位。'); return; }
     if (pwd !== pwd2){ fail('两次输入的密码不一致。'); return; }
 
