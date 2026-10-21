@@ -1910,7 +1910,16 @@ async function requestCode(email, btn, hintEl){
     if (error){
       btn.disabled = false;
       btn.textContent = '获取验证码';
-      return { error: (error && error.message) || '验证码发送失败，请稍后再试。' };
+      const raw = (error && error.message) || '';
+      let nice = '验证码发送失败，请稍后再试。';
+      if (/rate limit|too many|429|security purposes/i.test(raw)){
+        nice = '发送太频繁了：同一邮箱 60 秒内只能发一封，一小时内最多几封。请等一分钟再点，或先去垃圾箱找找。';
+      } else if (/invalid|not authorized|smtp|550|554|mailbox|recipient/i.test(raw)){
+        nice = '这封邮件没送出去（可能是收件地址不存在，或对方邮箱拒收）。换个邮箱试试。';
+      } else if (raw){
+        nice = '验证码发送失败：' + raw;
+      }
+      return { error: nice };
     }
     countdown(btn, '重新获取');
     if (hintEl) hintEl.textContent = '验证码已发出，请查收邮箱（也可能在垃圾箱里）。';
