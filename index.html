@@ -3131,6 +3131,7 @@ function bindSubmitForm(form, ctx){
     let rec = null;
     try{
       const payload = {
+        owner_id: uid(),
         author_name: author.value.trim(),
         email: email.value.trim(),
         section: secName,
