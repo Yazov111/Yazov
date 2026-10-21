@@ -580,7 +580,13 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
   .steps{grid-template-columns:repeat(2,1fr)}
 }
 @media (max-width:900px){
-  body{background-attachment:scroll}
+  /* iOS 不支持 background-attachment:fixed，改用固定定位的 ::before 承载背景图 */
+  body{background:#04060C}
+  body::before{
+    background:
+      linear-gradient(180deg,rgba(4,7,13,.6),rgba(4,7,13,.74) 42%,rgba(4,7,13,.86)),
+      url('images/flower-field.jpg') center/cover no-repeat;
+  }
   .nav,.hdr-cta{display:none}
   .auth-box{margin-left:auto}
   .menu-btn{display:block}
