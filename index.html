@@ -477,6 +477,7 @@ input[type=text],input[type=email],input[type=url],input[type=password],select,t
 select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-2) 50%),linear-gradient(135deg,var(--ink-2) 50%,transparent 50%);
   background-position:calc(100% - 18px) 21px,calc(100% - 13px) 21px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;cursor:pointer}
 select:disabled{color:var(--muted);background-color:rgba(231,234,240,.03);cursor:not-allowed}
+select option{background:#0A0F19;color:#E7EAF0}
 textarea{resize:vertical;line-height:1.9;min-height:150px}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azure);box-shadow:0 0 0 3px rgba(143,179,217,.14)}
 input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 3px rgba(192,69,64,.16)}
@@ -1208,6 +1209,7 @@ async function initPiece(id){
   }catch(_){}
 
   const sec = SECTIONS.find(s=>s.name === p.section);
+  const isOwner = !!(session && uid() && p.owner_id && String(p.owner_id) === String(uid()));
   const isSeries = chapters.length > 1 || !!p.parent_id;
   const chapterNo = p.chapter_no || 1;
   const rootTitle = (rootPiece && rootPiece.title) || p.title;
@@ -1241,6 +1243,21 @@ async function initPiece(id){
     <p class="piece-meta">${esc(p.author_name || '佚名')}${p.subsection ? ' · ' + esc(p.subsection) : ''}${p.is_original === false ? ' · 非原创' : ''} · 刊于 ${fmtDay(p.created_at)}</p>
     ${p.bio ? `<p class="piece-bio">作者简介：${esc(p.bio)}</p>` : ''}
     ${renderPieceContent(p.content, imgs)}
+    ${isOwner ? `
+    <section class="cmt-wrap" id="revWrap">
+      <div class="cmt-head">
+        <h3>修改此篇</h3>
+        <span class="n">改动经编辑部审核后生效，原文在此之前保持可见</span>
+      </div>
+      <form class="cmt-form" id="revForm" novalidate>
+        <input type="text" id="revTitle" maxlength="80" value="${esc(p.title)}" aria-label="标题">
+        <textarea id="revBody" style="min-height:220px" aria-label="正文">${esc(p.content || '')}</textarea>
+        <div class="cf-foot">
+          <button class="btn btn-sm btn-blood" type="submit">提交修改</button>
+          <span class="cmt-note" id="revMsg">修改标题与正文后提交；图片暂不支持在线修改，如需调整请通过退稿通道联系编辑部。</span>
+        </div>
+      </form>
+    </section>` : ''}
     ${nav}
     <section class="cmt-wrap" id="cmtWrap" data-piece="${rootId}">
       <div class="cmt-head">
@@ -1262,6 +1279,45 @@ async function initPiece(id){
   </article>`;
   window.scrollTo(0,0);
   initComments(rootId);
+  initRev(p.id);
+}
+
+async function initRev(pieceId){
+  const form = document.getElementById('revForm');
+  if (!form) return;
+  const msg = document.getElementById('revMsg');
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const t = document.getElementById('revTitle').value.trim();
+    const b = document.getElementById('revBody').value;
+    const btn = form.querySelector('button[type=submit]');
+    if (!t){ msg.textContent = '标题不能为空。'; msg.style.color = ''; return; }
+    btn.disabled = true;
+    btn.textContent = '提交中…';
+    try{
+      const { error } = await cloud.database.from('piece_revisions').insert({
+        piece_id: Number(pieceId),
+        author_id: uid(),
+        title: t,
+        content: b.trim() || null
+      });
+      if (error){
+        msg.textContent = '提交失败：' + ((error && error.message) || '请稍后重试');
+        msg.style.color = '';
+        btn.disabled = false;
+        btn.textContent = '提交修改';
+        return;
+      }
+      msg.textContent = '修改已提交，等待编辑部审核。审核通过前，原文保持可见。';
+      msg.style.color = '#7FC9A6';
+      btn.textContent = '已提交';
+    }catch(_){
+      msg.textContent = '网络异常，请稍后再试。';
+      msg.style.color = '';
+      btn.disabled = false;
+      btn.textContent = '提交修改';
+    }
+  });
 }
 
 function submitPage(ctx){
@@ -2399,6 +2455,7 @@ function adminPage(){
       <button class="tab-btn" data-view="all" type="button">全部</button>
       <button class="tab-btn" data-view="users" type="button">用户</button>
       <button class="tab-btn" data-view="comments" type="button">评论</button>
+      <button class="tab-btn" data-view="revisions" type="button">修改申请</button>
       <span class="step-hint" id="adminCount" style="margin-left:auto"></span>
     </div>
     <div id="adminList"><p class="step-hint">正在读取来稿…</p></div>
@@ -2485,19 +2542,99 @@ async function loadAdminList(view){
   }
 }
 
+async function loadAdminRevisions(){
+  const box = document.getElementById('adminList');
+  if (!box) return;
+  box.innerHTML = '<p class="step-hint">正在读取修改申请…</p>';
+  try{
+    const { data, error } = await cloud.database
+      .from('piece_revisions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error){
+      box.innerHTML = '<p class="step-hint">读取失败：' + esc(error.message) + '</p>';
+      return;
+    }
+    const cnt = document.getElementById('adminCount');
+    const pendingCount = (data || []).filter(r=>r.status === 'pending').length;
+    if (cnt) cnt.textContent = `共 ${data ? data.length : 0} 条 · 待处理 ${pendingCount} 条`;
+    if (!data || !data.length){
+      box.innerHTML = '<p class="step-hint">还没有作者提交修改申请。</p>';
+      return;
+    }
+    const revPill = (s)=>`<span class="pill ${s}">${s === 'pending' ? '待处理' : s === 'applied' ? '已生效' : '已拒绝'}</span>`;
+    box.innerHTML = data.map(r=>`
+      <details class="sub-item" data-rid="${r.id}">
+        <summary>
+          <span class="t">《${esc(r.title)}》</span>
+          <span class="meta">作品 #${r.piece_id} · ${fmtTime(r.created_at)}</span>
+          ${revPill(r.status)}
+        </summary>
+        <div class="sub-body">
+          <div class="sub-info"><span>修改后标题：${esc(r.title)}</span></div>
+          <div class="sub-content">${esc(r.content) || '（清空正文）'}</div>
+          ${r.status === 'pending' ? `
+          <div class="sub-actions">
+            <button class="btn btn-xs btn-blood" data-revact="apply" type="button">通过并生效</button>
+            <button class="btn btn-xs" data-revact="reject" type="button">拒绝</button>
+          </div>` : ''}
+        </div>
+      </details>
+    `).join('');
+
+    box.querySelectorAll('button[data-revact]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const rid = btn.closest('[data-rid]').dataset.rid;
+        const act = btn.dataset.revact;
+        btn.disabled = true;
+        const old = btn.textContent;
+        btn.textContent = '处理中…';
+        try{
+          let err = null;
+          if (act === 'apply'){
+            const res = await cloud.database.rpc('apply_revision', { p_rev: Number(rid) });
+            err = res.error;
+          } else {
+            const res = await cloud.database.from('piece_revisions')
+              .update({ status: 'rejected' })
+              .eq('id', Number(rid))
+              .eq('status', 'pending')
+              .select();
+            err = res.error;
+            if (!err && (!res.data || !res.data.length)) err = { message: '该申请已被处理过。' };
+          }
+          if (err){
+            btn.textContent = '失败';
+            setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 1800);
+            return;
+          }
+          btn.textContent = act === 'apply' ? '已生效' : '已拒绝';
+          loadAdminRevisions();
+        }catch(_){
+          btn.textContent = '网络异常';
+          setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 1800);
+        }
+      });
+    });
+  }catch(_){
+    box.innerHTML = '<p class="step-hint">网络异常，读取失败。</p>';
+  }
+}
+
 function initAdmin(){
   if (!isAdmin) return;
   loadAdminStats();
   loadAdminList('pending');
 
-  const tabs = document.querySelectorAll('.admin-bar .tab-btn');
-  tabs.forEach(btn=>{
+  const tabs = document.querySelectorAll('.admin-bar .tab-btn');  tabs.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       tabs.forEach(b=>b.classList.remove('on'));
       btn.classList.add('on');
       const v = btn.dataset.view;
       if (v === 'users') loadAdminUsers();
       else if (v === 'comments') loadAdminComments();
+      else if (v === 'revisions') loadAdminRevisions();
       else loadAdminList(v);
     });
   });
