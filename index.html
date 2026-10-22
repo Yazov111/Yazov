@@ -3468,9 +3468,7 @@ async function loadAdminUsers(){
       const isAdminUser = !!adminSet[u.id];
       const isSuperUser = !!superSet[u.id];
       const canManage = isSuper && u.id !== meId && !isSuperUser;
-      const badge = isSuperUser
-        ? '<span class="pill accepted">超级管理员</span>'
-        : isAdminUser ? '<span class="pill accepted">管理员</span>' : '';
+      const badge = isAdminUser ? '<span class="pill accepted">管理员</span>' : '';
       const action = canManage
         ? `<button class="btn btn-xs${isAdminUser ? '' : ' btn-blood'}" data-setadmin="${u.id}" data-make="${isAdminUser ? 'off' : 'on'}" type="button">${isAdminUser ? '撤销管理员' : '任命管理员'}</button>`
         : '';

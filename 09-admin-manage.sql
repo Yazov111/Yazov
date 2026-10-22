@@ -1,20 +1,20 @@
 -- 09 管理员分级：超级管理员可任命/撤销其他管理员
--- 超级管理员 = admins.is_super = true（站长的账号）
+-- 最高权限 = admins.is_super = true（仅站长账号，界面上同样显示为「管理员」）
 
 alter table public.admins add column if not exists is_super boolean not null default false;
 
--- 把站长账号设为超级管理员（若 admins 为空则跳过此步，由下方 insert 兜底）
+-- 把站长账号设为最高权限（若 admins 为空则跳过此步，由下方 insert 兜底）
 update public.admins a
    set is_super = true
  where a.user_id in (select id from auth.users where email = '482742624@qq.com')
    and not exists (select 1 from public.admins where is_super);
 
--- 兜底：若该邮箱尚未认领管理员，直接写入为超级管理员
+-- 兜底：若该邮箱尚未认领管理员，直接写入为最高权限
 insert into public.admins (user_id, is_super)
 select u.id, true from auth.users u where u.email = '482742624@qq.com'
 on conflict (user_id) do update set is_super = true;
 
--- 当前登录者是否超级管理员
+-- 当前登录者是否拥有最高权限（外部不区分显示）
 create or replace function public.is_super_admin() returns boolean
 language sql stable security definer set search_path to 'public' as $fn$
   select exists (select 1 from public.admins where user_id = auth.uid() and is_super);
@@ -26,13 +26,13 @@ language sql stable security definer set search_path to 'public' as $fn$
   select user_id, is_super from public.admins;
 $fn$;
 
--- 任命 / 撤销管理员（仅超级管理员可调；不能撤销任何超级管理员）
+-- 任命 / 撤销管理员（仅最高权限可调；不能撤销最高权限账号）
 create or replace function public.set_admin(p_user_id uuid, p_admin boolean) returns void
 language plpgsql security definer set search_path to 'public' as $fn$
 declare v_target_super boolean;
 begin
   if not public.is_super_admin() then
-    raise exception 'FORBIDDEN: only super admin can manage admins';
+    raise exception 'FORBIDDEN';
   end if;
   select is_super into v_target_super from public.admins where user_id = p_user_id;
   if p_admin then
@@ -40,7 +40,7 @@ begin
     on conflict (user_id) do nothing;
   else
     if v_target_super is true then
-      raise exception 'FORBIDDEN: cannot revoke a super admin';
+      raise exception 'FORBIDDEN';
     end if;
     delete from public.admins where user_id = p_user_id;
   end if;
