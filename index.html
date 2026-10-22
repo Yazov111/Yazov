@@ -1772,6 +1772,7 @@ const cloud = (window.WorkBuddyCloud && window.WorkBuddyCloud.createWorkBuddyClo
 let session = null;
 let profile = null;
 let isAdmin = false;
+let isSuper = false;
 
 function uid(){
   if (!session) return null;
@@ -1794,7 +1795,7 @@ async function refreshSession(){
 }
 
 async function loadProfile(){
-  profile = null; isAdmin = false;
+  profile = null; isAdmin = false; isSuper = false;
   const id = uid();
   if (!id || !cloud) return;
   try{
@@ -1804,6 +1805,12 @@ async function loadProfile(){
     ]);
     profile = (p && p.data) || null;
     isAdmin = !!(a && a.data);
+    if (isAdmin){
+      try{
+        const s = await cloud.database.rpc('is_super_admin');
+        isSuper = !!(s && s.data);
+      }catch(_){ isSuper = false; }
+    }
     try{ await cloud.database.rpc('claim_owned_pieces'); }catch(_){}
     if (!profile){
       const mail = userEmail();
@@ -1838,7 +1845,7 @@ function updateAuth(){
     const btn = document.getElementById('logoutBtn');
     if (btn) btn.onclick = async ()=>{
       try{ await cloud.auth.signOut(); }catch(_){}
-      session = null; profile = null; isAdmin = false;
+      session = null; profile = null; isAdmin = false; isSuper = false;
       location.hash = '#/';
       render();
     };
@@ -3448,15 +3455,59 @@ async function loadAdminUsers(){
       box.innerHTML = '<p class="step-hint">还没有注册用户。</p>';
       return;
     }
-    box.innerHTML = users.map(u=>`
-      <div class="sub-item" style="margin-bottom:8px">
+    let adminSet = {};
+    let superSet = {};
+    if (isSuper){
+      try{
+        const aRes = await cloud.database.rpc('list_admin_ids');
+        ((aRes && aRes.data) || []).forEach(a=>{ adminSet[a.user_id] = true; if (a.is_super) superSet[a.user_id] = true; });
+      }catch(_){}
+    }
+    const meId = uid();
+    box.innerHTML = users.map(u=>{
+      const isAdminUser = !!adminSet[u.id];
+      const isSuperUser = !!superSet[u.id];
+      const canManage = isSuper && u.id !== meId && !isSuperUser;
+      const badge = isSuperUser
+        ? '<span class="pill accepted">超级管理员</span>'
+        : isAdminUser ? '<span class="pill accepted">管理员</span>' : '';
+      const action = canManage
+        ? `<button class="btn btn-xs${isAdminUser ? '' : ' btn-blood'}" data-setadmin="${u.id}" data-make="${isAdminUser ? 'off' : 'on'}" type="button">${isAdminUser ? '撤销管理员' : '任命管理员'}</button>`
+        : '';
+      return `
+      <div class="sub-item" style="margin-bottom:8px" data-uid="${u.id}">
         <div class="admin-user-row">
           <span class="t">${esc(u.display_name || '未署名')}</span>
           <span class="meta">${esc(u.email) || '—'}</span>
           <span class="meta">注册于 ${fmtTime(u.created_at)}</span>
           <span class="meta">投稿 ${counts[u.id] || 0} 篇</span>
+          ${badge}
+          ${action}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+    box.querySelectorAll('button[data-setadmin]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const target = btn.dataset.setadmin;
+        const make = btn.dataset.make === 'on';
+        btn.disabled = true;
+        const old = btn.textContent;
+        btn.textContent = '处理中…';
+        try{
+          const res = await cloud.database.rpc('set_admin', { p_user_id: target, p_admin: make });
+          if (res && res.error){
+            btn.textContent = '失败';
+            setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 1800);
+            return;
+          }
+          btn.textContent = make ? '已任命' : '已撤销';
+          loadAdminUsers();
+        }catch(_){
+          btn.textContent = '网络异常';
+          setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 1800);
+        }
+      });
+    });
   }catch(_){
     box.innerHTML = '<p class="step-hint">网络异常，读取失败。</p>';
   }
