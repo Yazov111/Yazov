@@ -2241,10 +2241,10 @@ function initReset(){
 function claimBox(){
   return `
   <div style="margin-top:26px;border-top:1px dashed var(--line);padding-top:22px">
-    <p class="step-hint" style="margin-bottom:12px">如果你是编辑部成员，在这里输入管理员邀请码，即可开启后台权限。</p>
+    <p class="step-hint" style="margin-bottom:12px">本区域仅限编辑部使用。普通读者与作者无需任何验证码即可注册、投稿、评论；此码只在激活管理权限时使用。</p>
     <form id="claim-form">
       <div class="otp-row">
-        <input type="text" id="claimCode" placeholder="管理员邀请码">
+        <input type="text" id="claimCode" placeholder="管理员登录码">
         <button class="btn btn-sm" type="submit">激活</button>
       </div>
       <p class="auth-msg" id="claimMsg"></p>
@@ -2275,7 +2275,7 @@ function mePage(){
         <p class="step-hint" style="margin-top:8px">注册于 ${fmtDay(joined)}${days ? ` · 第 ${days} 天` : ''}</p>
         ${isAdmin
           ? `<div style="margin-top:26px"><a href="#/admin" class="btn btn-blood btn-sm">进入管理后台 <span class="arr">→</span></a></div>`
-          : claimBox()}
+          : ''}
       </div>
       <div class="me-panel">
         <h3>我的投稿</h3>
@@ -2351,7 +2351,7 @@ async function initMe(){
       const msg = document.getElementById('claimMsg');
       msg.classList.remove('on');
       const code = document.getElementById('claimCode').value.trim();
-      if (!code){ msg.textContent = '请填写邀请码。'; msg.classList.add('on'); return; }
+      if (!code){ msg.textContent = '请填写管理员登录码。'; msg.classList.add('on'); return; }
       try{
         const { data, error } = await cloud.database.rpc('claim_admin', { p_code: code });
         if (error){
@@ -2364,7 +2364,7 @@ async function initMe(){
           location.hash = '#/admin';
           render();
         } else if (data === 'bad_code'){
-          msg.textContent = '邀请码不正确。';
+          msg.textContent = '管理员登录码不正确。';
           msg.classList.add('on');
         } else {
           msg.textContent = '登录状态已失效，请重新登录。';
