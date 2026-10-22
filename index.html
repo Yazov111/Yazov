@@ -641,6 +641,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
       <a href="#/poetry" data-route="poetry">诗歌</a>
       <a href="#/photo" data-route="photo">照片</a>
       <a href="#/survey" data-route="survey">调查报告</a>
+      <a href="#/game" data-route="game">游戏思考</a>
       <a href="#/search" data-route="search">检索</a>
       <a href="#/submit" data-route="submit">投稿</a>
       <a href="#/about" data-route="about">关于</a>
@@ -664,6 +665,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
     <a href="#/poetry">诗歌</a>
     <a href="#/photo">照片</a>
     <a href="#/survey">调查报告</a>
+    <a href="#/game">游戏思考</a>
     <a href="#/search">检索</a>
     <a href="#/submit">投稿</a>
     <a href="#/about">关于</a>
@@ -700,6 +702,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
           <li><a href="#/poetry">诗歌</a></li>
           <li><a href="#/photo">照片</a></li>
           <li><a href="#/survey">调查报告</a></li>
+          <li><a href="#/game">游戏思考</a></li>
         </ul>
       </div>
       <div>
@@ -815,6 +818,21 @@ const SECTIONS = [
       {name:'校园与青年', desc:'宿舍、课堂、就业与选择。离你最近的，往往最值得认真调查。'},
       {name:'深度报道', desc:'一件事，多方求证。把讲清楚一件事当作唯一的目标。'},
       {name:'数据报告', desc:'问卷、图表、访谈记录。数字是冷的，但每个数字背后都是人。'}
+    ]
+  },
+  {
+    id:'game', no:'07', name:'游戏思考', en:'Game Reflection', color:'#9BC4BF', bannerPos:'center 30%',
+    tagline:'存档之外，还有值得带走的东西',
+    desc:'游戏里的哪一句话，哪一个人物，哪一个场景，引发了你的深思？通关之后仍然留下来的，才是游戏真正给你的东西。',
+    lead:'按下暂停，把感受写下来。',
+    long:'本栏目接受游戏随笔、剧情与角色分析、关卡与机制解读，以及由游戏引发的一切严肃思考。我们不要求"客观评测"，也不设高分低分——只问一件事：这款游戏让你想到了什么？可以谈一段让你失眠的剧情，一个比现实更真实的人物，一处安静的风景，或一套让你重新理解"选择"的机制。引用游戏原文时请注明出处；剧透请在开头给出提醒。',
+    meta:['单篇 1,500 – 10,000 字','随笔 / 评论 / 分析 / 杂谈'],
+    subs:[],
+    genres:[
+      {name:'剧情与叙事', desc:'一段故事、一个结局、一句台词。分析它为何击中你。'},
+      {name:'角色论', desc:'为一个人物写一篇小传。虚拟的容器，真实的重量。'},
+      {name:'场景与美术', desc:'一处风景、一段配乐、一次无声的镜头语言。'},
+      {name:'机制与哲学', desc:'规则即表达。谈玩法背后的设计与思想。'}
     ]
   }
 ];
