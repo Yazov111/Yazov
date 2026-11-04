@@ -733,7 +733,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
    ========================================================== */
 const SECTIONS = [
   {
-    id:'philosophy', no:'01', name:'哲学', en:'Philosophy', color:'#86ACD4', bannerPos:'center 30%',
+    id:'philosophy', no:'01', name:'哲学', en:'Philosophy', color:'#86ACD4', bannerPos:'center 45%', bannerImg:'images/philosophy-hall.jpg',
     tagline:'追问着，不被允许回答的答案',
     desc:'这个世界没有把"为何"告诉过任何人。那么，就由提问的一方来支付代价——以论文、札记或译文的形式，把问题押上祭坛。',
     lead:'答案早已在路上。只是它要求你——先交出全部的诚实。',
@@ -1028,7 +1028,7 @@ function sectionPage(sec){
   </section>
   </div>`;
 
-  return banner({no:`${sec.no} / ${sec.en}`, title:sec.name, en:sec.en, color:sec.color, img:'images/umbrella-girl.jpg', pos:sec.bannerPos}) + body;
+  return banner({no:`${sec.no} / ${sec.en}`, title:sec.name, en:sec.en, color:sec.color, img:sec.bannerImg || 'images/umbrella-girl.jpg', pos:sec.bannerPos}) + body;
 }
 
 /* ==========================================================
