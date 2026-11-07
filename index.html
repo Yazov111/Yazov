@@ -30,15 +30,18 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
-  margin:0;background:#04060C url('images/flower-field.jpg') no-repeat fixed center/cover;
+  margin:0;background:#04060C;
   color:var(--ink);
   font-family:var(--serif);font-size:16px;line-height:1.85;
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
-body::before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:linear-gradient(180deg,rgba(4,7,13,.6),rgba(4,7,13,.74) 42%,rgba(4,7,13,.86));
+/* 全站背景图层：由 JS 轮换（见 BG_POOL），渐变遮罩与图片合成在同一层，桌面与 iOS 行为一致 */
+.bg-layer{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-position:center;background-size:cover;background-repeat:no-repeat;
+  opacity:0;transition:opacity 2.2s ease;
 }
+.bg-layer.on{opacity:1}
 ::selection{background:var(--azure);color:#0A0F19}
 a{color:inherit;text-decoration:none}
 h1,h2,h3,h4{margin:0;font-weight:500;letter-spacing:.08em}
@@ -596,13 +599,8 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
   .steps{grid-template-columns:repeat(2,1fr)}
 }
 @media (max-width:900px){
-  /* iOS 不支持 background-attachment:fixed，改用固定定位的 ::before 承载背景图 */
+  /* 背景由 position:fixed 的 .bg-layer 承载，iOS 同样可用 */
   body{background:#04060C}
-  body::before{
-    background:
-      linear-gradient(180deg,rgba(4,7,13,.6),rgba(4,7,13,.74) 42%,rgba(4,7,13,.86)),
-      url('images/flower-field.jpg') center/cover no-repeat;
-  }
   .nav,.hdr-cta{display:none}
   .auth-box{margin-left:auto}
   .menu-btn{display:block}
@@ -736,7 +734,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
       </div>
     </div>
     <div class="ftr-bottom">
-      <span>© 2026 理想螺旋 · 创刊号 · 版本 11.07c</span>
+      <span>© 2026 理想螺旋 · 创刊号 · 版本 11.07d</span>
       <span>账号与来稿保存在云端，登录后可在任何设备查看</span>
     </div>
   </div>
@@ -3668,6 +3666,43 @@ document.addEventListener('click', (e)=>{
   if (location.hash === target) render();
   else location.hash = target;
 });
+
+/* ==========================================================
+   全站背景轮换
+   ========================================================== */
+const BG_POOL = [
+  'images/flower-field.jpg',   // 花田
+  'images/balcony-summer.jpg', // 夏日阳台
+  'images/night-sky.jpg',      // 夜空
+  'images/moon-gate.jpg'       // 月门
+];
+const BG_GRAD = 'linear-gradient(180deg,rgba(4,7,13,.6),rgba(4,7,13,.74) 42%,rgba(4,7,13,.86))';
+const BG_INTERVAL = 45000; // 每 45 秒换一张
+
+(function initBgRotate(){
+  const layers = [document.createElement('div'), document.createElement('div')];
+  let poolIdx = Math.floor(Math.random() * BG_POOL.length);
+  let active = 0;
+  const apply = (layer, img)=>{ layer.style.backgroundImage = BG_GRAD + ', url("' + img + '")'; };
+  layers.forEach(l=>{
+    l.className = 'bg-layer';
+    l.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(l, document.body.firstChild);
+  });
+  apply(layers[0], BG_POOL[poolIdx]);
+  layers[0].classList.add('on');
+  BG_POOL.forEach(src=>{ const im = new Image(); im.src = src; }); // 预加载，切换不闪白
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) return; // 用户偏好减少动效时保持静态
+  setInterval(()=>{
+    poolIdx = (poolIdx + 1) % BG_POOL.length;
+    const nxt = layers[1 - active];
+    apply(nxt, BG_POOL[poolIdx]);
+    nxt.classList.add('on');
+    layers[active].classList.remove('on');
+    active = 1 - active;
+  }, BG_INTERVAL);
+})();
 
 window.addEventListener('hashchange', render);
 render();
