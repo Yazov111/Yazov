@@ -387,8 +387,20 @@ img{max-width:100%;display:block}
   padding:32px 30px 26px;border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);
   display:flex;flex-direction:column;transition:background .4s var(--ease);
   background:rgba(8,13,23,.42);backdrop-filter:blur(6px);
+  position:relative;overflow:hidden;
+}
+.sub-card>*{position:relative;z-index:1}
+.sub-bg{
+  position:absolute;inset:0;z-index:0;
+  background-size:cover;background-position:center;
+  opacity:.32;
+}
+.sub-bg::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(4,7,13,.25),rgba(4,7,13,.78) 78%);
 }
 .sub-card:hover{background:rgba(14,21,36,.66)}
+.sub-card:hover .sub-bg{opacity:.42}
 .sub-no{font-family:var(--sans);font-size:11px;letter-spacing:.2em;color:var(--muted);margin-bottom:16px}
 .sub-card h3{font-size:22px;letter-spacing:.12em;margin-bottom:6px}
 .sub-en{font-family:var(--sans);font-size:9.5px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:16px}
@@ -740,7 +752,7 @@ const SECTIONS = [
     long:'本栏目接受论文、思想札记、读书笔记与译文，不设学派立场限制。要求概念使用准确、论证过程完整、术语在首次出现时予以解释。能把严肃问题写得清晰易读，是本栏目尤为看重的写作能力。',
     meta:['单篇 3,000 – 20,000 字','论文 / 札记 / 读书笔记 / 译文'],
     subs:[
-      {name:'马克思主义哲学', en:'Marxist Philosophy', desc:'研读经典文本，讨论资本、劳动、历史等核心议题，关注理论在当代条件下的适用与发展。'},
+      {name:'马克思主义哲学', en:'Marxist Philosophy', img:'images/marxist-philosophy.jpg', desc:'研读经典文本，讨论资本、劳动、历史等核心议题，关注理论在当代条件下的适用与发展。'},
       {name:'外国哲学', en:'Western Philosophy', desc:'涵盖现象学、分析哲学、精神分析等西方哲学传统，欢迎梳理、评论与比较研究。'},
       {name:'中国哲学', en:'Chinese Philosophy', desc:'先秦诸子、魏晋玄学、宋明理学等中国传统思想的整理、阐释与现代转化。'},
       {name:'伦理学', en:'Ethics', desc:'讨论道德判断与行为规范问题，包括技术伦理、生命伦理、环境伦理与现实困境。'}
@@ -989,6 +1001,7 @@ function sectionPage(sec){
     body += `<div class="sub-grid">
       ${sec.subs.map((s,i)=>`
         <article class="sub-card reveal" style="--sc:${sec.color}">
+          ${s.img ? `<div class="sub-bg" style="background-image:url('${s.img}')"></div>` : ''}
           <div class="sub-no">${sec.no}.${i+1}</div>
           <h3>${s.name}</h3>
           <p class="sub-en">${s.en}</p>
