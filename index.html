@@ -734,7 +734,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
       </div>
     </div>
     <div class="ftr-bottom">
-      <span>© 2026 理想螺旋 · 创刊号 · 版本 11.07e</span>
+      <span>© 2026 理想螺旋 · 创刊号 · 版本 11.07f</span>
       <span>账号与来稿保存在云端，登录后可在任何设备查看</span>
     </div>
   </div>
@@ -3672,10 +3672,12 @@ document.addEventListener('click', (e)=>{
    ========================================================== */
 const BG_POOL = [
   'images/flower-field.jpg',   // 花田
-  'images/balcony-summer.jpg'  // 夏日阳台
+  'images/balcony-summer.jpg', // 夏日阳台
+  'images/liberty-cream.jpg',  // 自由引导人民（奶油小黄人版）
+  'images/chair-cloud.jpg'     // 云海白椅
 ];
 const BG_GRAD = 'linear-gradient(180deg,rgba(4,7,13,.6),rgba(4,7,13,.74) 42%,rgba(4,7,13,.86))';
-const BG_INTERVAL = 45000; // 每 45 秒换一张
+const BG_INTERVAL = 10000; // 每 10 秒换一张
 
 (function initBgRotate(){
   const layers = [document.createElement('div'), document.createElement('div')];
