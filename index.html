@@ -736,7 +736,7 @@ input.err,select.err,textarea.err{border-color:var(--cinnabar);box-shadow:0 0 0 
       </div>
     </div>
     <div class="ftr-bottom">
-      <span>© 2026 理想螺旋 · 创刊号</span>
+      <span>© 2026 理想螺旋 · 创刊号 · 版本 11.07c</span>
       <span>账号与来稿保存在云端，登录后可在任何设备查看</span>
     </div>
   </div>
@@ -3656,6 +3656,18 @@ document.getElementById('menuBtn').addEventListener('click', function(){
 document.addEventListener('wheel', (e)=>{
   if (e.target && e.target.tagName === 'SELECT') e.preventDefault();
 }, { passive:false });
+
+/* 子栏卡片：显式接管点击，避免个别浏览器 / 缓存版本下锚点跳转失效 */
+document.addEventListener('click', (e)=>{
+  const card = e.target && e.target.closest ? e.target.closest('a.sub-card') : null;
+  if (!card) return;
+  const href = card.getAttribute('href') || '';
+  if (href.indexOf('#/') !== 0) return;
+  e.preventDefault();
+  const target = href.slice(1);
+  if (location.hash === target) render();
+  else location.hash = target;
+});
 
 window.addEventListener('hashchange', render);
 render();
