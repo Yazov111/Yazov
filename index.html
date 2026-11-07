@@ -389,6 +389,9 @@ img{max-width:100%;display:block}
   background:rgba(8,13,23,.42);backdrop-filter:blur(6px);
   position:relative;overflow:hidden;
 }
+a.sub-card{color:inherit;text-decoration:none;cursor:pointer}
+.sub-card .sub-go{font-family:var(--sans);font-size:11px;letter-spacing:.14em;color:var(--muted);margin-top:14px;transition:color .3s var(--ease)}
+a.sub-card:hover .sub-go{color:var(--sc,var(--azure))}
 .sub-card>*{position:relative;z-index:1}
 .sub-bg{
   position:absolute;inset:0;z-index:0;
@@ -752,10 +755,10 @@ const SECTIONS = [
     long:'本栏目接受论文、思想札记、读书笔记与译文，不设学派立场限制。要求概念使用准确、论证过程完整、术语在首次出现时予以解释。能把严肃问题写得清晰易读，是本栏目尤为看重的写作能力。',
     meta:['单篇 3,000 – 20,000 字','论文 / 札记 / 读书笔记 / 译文'],
     subs:[
-      {name:'马克思主义哲学', en:'Marxist Philosophy', img:'images/marxist-philosophy.jpg', desc:'研读经典文本，讨论资本、劳动、历史等核心议题，关注理论在当代条件下的适用与发展。'},
-      {name:'外国哲学', en:'Western Philosophy', desc:'涵盖现象学、分析哲学、精神分析等西方哲学传统，欢迎梳理、评论与比较研究。'},
-      {name:'中国哲学', en:'Chinese Philosophy', desc:'先秦诸子、魏晋玄学、宋明理学等中国传统思想的整理、阐释与现代转化。'},
-      {name:'伦理学', en:'Ethics', desc:'讨论道德判断与行为规范问题，包括技术伦理、生命伦理、环境伦理与现实困境。'}
+      {name:'马克思主义哲学', en:'Marxist Philosophy', slug:'marx', img:'images/marxist-philosophy.jpg', desc:'研读经典文本，讨论资本、劳动、历史等核心议题，关注理论在当代条件下的适用与发展。'},
+      {name:'外国哲学', en:'Western Philosophy', slug:'western', desc:'涵盖现象学、分析哲学、精神分析等西方哲学传统，欢迎梳理、评论与比较研究。'},
+      {name:'中国哲学', en:'Chinese Philosophy', slug:'chinese', desc:'先秦诸子、魏晋玄学、宋明理学等中国传统思想的整理、阐释与现代转化。'},
+      {name:'伦理学', en:'Ethics', slug:'ethics', desc:'讨论道德判断与行为规范问题，包括技术伦理、生命伦理、环境伦理与现实困境。'}
     ]
   },
   {
@@ -766,9 +769,9 @@ const SECTIONS = [
     long:'本栏目接受原创虚构作品，体裁不限。我们看重叙事节奏的把控与人物塑造的真实性，并要求结尾处理得当。系列作品请先提交第一话与全篇大纲，编辑部将据此决定是否连载。',
     meta:['按篇幅分为三档','原创 · 系列作请注明规划'],
     subs:[
-      {name:'长篇', en:'Novel', desc:'八万字以上。可先投开篇三万字与全篇大纲，也可直接提交完整稿件。'},
-      {name:'中篇', en:'Novella', desc:'两万至八万字。要求结构完整，允许开放式结尾。'},
-      {name:'短篇', en:'Short Story', desc:'两万字以下，建议三千至一万五千字。要求围绕单一场景或事件集中展开。'}
+      {name:'长篇', en:'Novel', slug:'novel', desc:'八万字以上。可先投开篇三万字与全篇大纲，也可直接提交完整稿件。'},
+      {name:'中篇', en:'Novella', slug:'novella', desc:'两万至八万字。要求结构完整，允许开放式结尾。'},
+      {name:'短篇', en:'Short Story', slug:'short', desc:'两万字以下，建议三千至一万五千字。要求围绕单一场景或事件集中展开。'}
     ]
   },
   {
@@ -1000,7 +1003,7 @@ function sectionPage(sec){
   if (sec.subs.length){
     body += `<div class="sub-grid">
       ${sec.subs.map((s,i)=>`
-        <article class="sub-card reveal" style="--sc:${sec.color}">
+        <a class="sub-card reveal" style="--sc:${sec.color}" href="#/${sec.id}/${s.slug || ''}">
           ${s.img ? `<div class="sub-bg" style="background-image:url('${s.img}')"></div>` : ''}
           <div class="sub-no">${sec.no}.${i+1}</div>
           <h3>${s.name}</h3>
@@ -1010,7 +1013,8 @@ function sectionPage(sec){
             <span class="tag">征稿中</span>
             <span class="muted" data-sub="${s.name}">暂无文章</span>
           </div>
-        </article>`).join('')}
+          <span class="sub-go">进入专栏 →</span>
+        </a>`).join('')}
     </div>`;
   } else if (sec.genres){
     body += `<div class="note-block reveal">
@@ -1044,6 +1048,43 @@ function sectionPage(sec){
   return banner({no:`${sec.no} / ${sec.en}`, title:sec.name, en:sec.en, color:sec.color, img:sec.bannerImg || 'images/umbrella-girl.jpg', pos:sec.bannerPos}) + body;
 }
 
+/* 细分栏目（专栏）页面：只显示该专栏已刊出的作品 */
+function subPage(sec, sub){
+  const idx = (sec.subs || []).findIndex(x=>x.slug === sub.slug);
+  const head = banner({
+    no:`${sec.no}.${idx+1} / ${sec.en}`,
+    title:sub.name,
+    en:sub.en,
+    color:sec.color,
+    img:sub.img || sec.bannerImg || 'images/umbrella-girl.jpg',
+    pos:'center 45%'
+  });
+  return head + `
+  <div class="wrap page">
+    <div class="page-head reveal">
+      <div class="page-meta">
+        <span><a href="#/${sec.id}" style="color:inherit">← 返回${sec.name}</a></span>
+        <span>${sec.name} / ${sub.name}</span>
+      </div>
+      <p class="page-lead">${sub.desc}</p>
+    </div>
+
+    <section class="sec" style="padding:24px 0 0">
+      <div class="sec-head reveal">
+        <div><span class="sec-label">WORKS</span><h2>本专栏作品</h2></div>
+        <span class="en">PUBLISHED</span>
+      </div>
+      <div id="secPieces" data-sec="${sub.name}"><p class="step-hint">正在读取…</p></div>
+      <div class="empty reveal" id="secEmpty" style="display:none">
+        ${moonlet()}
+        <h4>这里暂时没有文章</h4>
+        <p style="margin-top:8px">本专栏尚无刊出作品，欢迎投稿。</p>
+        <div style="margin-top:26px"><a href="#/submit?sec=${sec.id}&sub=${sub.slug}" class="btn btn-sm">投稿到${sub.name} <span class="arr">→</span></a></div>
+      </div>
+    </section>
+  </div>`;
+}
+
 /* ==========================================================
    刊出作品（栏目列表 + 详情）
    ========================================================== */
@@ -1051,16 +1092,18 @@ function pieceShell(){
   return `<div class="wrap page"><div id="pieceBody"><p class="step-hint">正在读取…</p></div></div>`;
 }
 
-async function initSection(secName){
+async function initSection(secName, subName){
   const box = document.getElementById('secPieces');
   const emptyBox = document.getElementById('secEmpty');
   if (!box) return;
   let rows = [];
   if (cloud){
     try{
-      const { data, error } = await cloud.database.from('published_pieces')
+      let q = cloud.database.from('published_pieces')
         .select('id,title,subsection,author_name,content,created_at,parent_id,chapter_no')
-        .eq('section', secName)
+        .eq('section', secName);
+      if (subName) q = q.eq('subsection', subName);
+      const { data, error } = await q
         .order('created_at', { ascending: false })
         .limit(120);
       if (!error && data) rows = data;
@@ -1712,6 +1755,7 @@ const ROUTES = {
   poetry: () => sectionPage(byId('poetry')),
   photo: () => sectionPage(byId('photo')),
   survey: () => sectionPage(byId('survey')),
+  game: () => sectionPage(byId('game')),
   submit: () => submitPage(),
   about: () => aboutPage(),
   search: () => searchPage(),
@@ -2750,12 +2794,19 @@ function render(){
   } else if (key.indexOf('continue/') === 0){
     ctx = { mode:'continue', id: key.split('/')[1] };
     view = ()=>submitPage(ctx);
+  } else if (key.split('/').length === 2 && byId(key.split('/')[0]) &&
+             ((byId(key.split('/')[0]).subs) || []).some(s=>s.slug === key.split('/')[1])){
+    const sec = byId(key.split('/')[0]);
+    const sub = sec.subs.find(s=>s.slug === key.split('/')[1]);
+    ctx = { kind:'sub', sec, sub };
+    view = ()=>subPage(sec, sub);
   } else {
     view = ROUTES[key] || ROUTES.home;
   }
   app.innerHTML = view();
+  const navKey = key.split('/')[0];
   document.querySelectorAll('#nav a').forEach(a=>{
-    a.classList.toggle('active', a.dataset.route === key);
+    a.classList.toggle('active', a.dataset.route === navKey);
   });
   document.getElementById('mnav').classList.remove('open');
   document.getElementById('menuBtn').classList.remove('on');
@@ -2767,12 +2818,41 @@ function render(){
   if (key === 'home') initHome();
   if (key === 'search') initSearch();
   if (key === 'submit') initForm({ mode:'new' });
-  if (ctx) initForm(ctx);
+  if (key === 'submit'){
+    // 从专栏页的「投稿到XX」跳进来时，自动预选大区与细分栏目
+    const qs = (location.hash.split('?')[1] || '');
+    const sp = new URLSearchParams(qs);
+    const sid = sp.get('sec'), slug = sp.get('sub');
+    if (sid && byId(sid)){
+      const secSelEl = document.getElementById('section');
+      if (secSelEl){
+        secSelEl.value = sid;
+        secSelEl.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+      if (slug){
+        const sub = (byId(sid).subs || []).find(s=>s.slug === slug);
+        if (sub){
+          let tries = 0;
+          const wait = ()=>{
+            const ss = document.getElementById('sub');
+            if (ss && !ss.disabled && ss.querySelector('option[value="' + sub.name + '"]')){
+              ss.value = sub.name;
+            } else if (tries++ < 20){
+              setTimeout(wait, 50);
+            }
+          };
+          wait();
+        }
+      }
+    }
+  }
+  if (ctx && ctx.mode) initForm(ctx);
   if (key === 'login' || key === 'register') initAuth(key);
   if (key === 'reset') initReset();
   if (key === 'me') initMe();
   if (key === 'admin') initAdmin();
-  if (key === 'philosophy' || key === 'lightnovel' || key === 'essay' || key === 'poetry' || key === 'photo' || key === 'survey') initSection(byId(key).name);
+  if (ctx && ctx.kind === 'sub') initSection(ctx.sec.name, ctx.sub.name);
+  else if (byId(key)) initSection(byId(key).name);
   if (key.indexOf('piece/') === 0) initPiece(key.split('/')[1]);
   const TITLES = {
     home:'理想螺旋 · 文学与思想合刊', submit:'投稿 · 理想螺旋', about:'关于本刊 · 理想螺旋',
@@ -2780,7 +2860,9 @@ function render(){
     me:'我的账号 · 理想螺旋', admin:'管理后台 · 理想螺旋', search:'检索 · 理想螺旋'
   };
   const sec = byId(key);
-  document.title = TITLES[key] || (ctx ? '续写 · 理想螺旋' : (sec ? sec.name + ' · 理想螺旋' : '理想螺旋'));
+  document.title = TITLES[key] || (ctx && ctx.mode ? '续写 · 理想螺旋'
+    : (ctx && ctx.kind === 'sub' ? ctx.sub.name + ' · ' + ctx.sec.name + ' · 理想螺旋'
+    : (sec ? sec.name + ' · 理想螺旋' : '理想螺旋')));
 }
 
 /* reveal 动画 */
